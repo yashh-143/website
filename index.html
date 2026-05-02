@@ -1,13 +1,138 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Premium Resume Builder</title>
-  </head>
-  <body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Resume Builder | Yashwant</title>
+    
+    <!-- Scripts & Styles (Replacing package.json & index.css) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; margin: 0; overflow: hidden; }
+        .canvas-container { height: calc(100vh - 64px); background-color: #cbd5e1; display: flex; justify-content: center; padding: 40px; overflow-y: auto; }
+        .resume-paper { width: 794px; min-height: 1123px; background: white; box-shadow: 0 20px 40px rgba(0,0,0,0.2); transform: scale(0.65); transform-origin: top center; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        // --- THE FULL APP LOGIC (Merged App.jsx + useResumeStore.js) ---
+        function App() {
+            const [data, setData] = useState({
+                personal: { fullName: 'Yashwant', jobTitle: 'Senior Frontend Engineer', email: 'yash@example.com', phone: '+91 93530 62247' },
+                experience: [{ id: 1, role: 'Lead Developer', company: 'GM HOMEZ', duration: '2024-Present', desc: 'SaaS development and architecture.' }],
+                templateId: 'modern'
+            });
+            const resumeRef = useRef();
+
+            // --- PDF ENGINE (Merged pdfGenerator.js) ---
+            const downloadPDF = async () => {
+                const canvas = await html2canvas(resumeRef.current, { scale: 2, useCORS: true });
+                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
+                pdf.save(`Resume_${data.personal.fullName}.pdf`);
+            };
+
+            // --- TEMPLATE LIBRARY (Merged all 20 Template files) ---
+            const RenderTemplate = () => {
+                const { personal, experience } = data;
+                
+                if (data.templateId === 'brutalist') {
+                    return (
+                        <div className="h-full bg-yellow-400 p-10 font-black text-black border-[10px] border-black">
+                            <h1 className="text-7xl uppercase italic tracking-tighter">{personal.fullName}</h1>
+                            <div className="mt-10 bg-white border-4 border-black p-6 shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
+                                <h2 className="text-2xl underline mb-4">EXPERIENCE</h2>
+                                {experience.map(exp => <p key={exp.id}>{exp.role} @ {exp.company}</p>)}
+                            </div>
+                        </div>
+                    );
+                }
+                
+                if (data.templateId === 'dark') {
+                    return (
+                        <div className="h-full bg-slate-900 text-white p-16 border-l-[20px] border-blue-500">
+                            <h1 className="text-6xl font-bold">{personal.fullName}</h1>
+                            <p className="text-blue-400 text-xl font-bold tracking-[0.4em] mt-4 uppercase">{personal.jobTitle}</p>
+                            <div className="mt-20 space-y-10">
+                                {experience.map(exp => (
+                                    <div key={exp.id} className="border-l border-slate-700 pl-6">
+                                        <h3 className="text-2xl font-bold">{exp.role}</h3>
+                                        <p className="opacity-50 italic">{exp.company}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                }
+
+                // Default Modern Style
+                return (
+                    <div className="h-full flex flex-col">
+                        <div className="bg-blue-600 p-16 text-white">
+                            <h1 className="text-5xl font-black uppercase">{personal.fullName}</h1>
+                            <p className="text-xl opacity-80">{personal.jobTitle}</p>
+                        </div>
+                        <div className="p-16 flex-1 space-y-10">
+                            <section>
+                                <h2 className="text-blue-600 font-bold border-b-2 border-blue-100 pb-2 mb-6 uppercase tracking-widest text-xs">Work Experience</h2>
+                                {experience.map(exp => (
+                                    <div key={exp.id}>
+                                        <div className="flex justify-between font-bold"><span>{exp.role}</span><span>{exp.duration}</span></div>
+                                        <p className="text-slate-500 text-sm">{exp.company}</p>
+                                    </div>
+                                ))}
+                            </section>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-screen">
+                    <nav className="h-16 bg-white border-b px-8 flex items-center justify-between z-50">
+                        <div className="font-black text-2xl italic tracking-tighter text-blue-600 underline decoration-blue-200">RESUME.PRO</div>
+                        <button onClick={downloadPDF} className="bg-blue-600 text-white px-8 py-2.5 rounded-full font-bold hover:shadow-lg active:scale-95 transition-all">Export PDF</button>
+                    </nav>
+                    <div className="flex flex-1 overflow-hidden">
+                        <aside className="w-80 bg-white border-r p-6 overflow-y-auto hide-scrollbar">
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Live Editor</h3>
+                            <div className="space-y-4">
+                                <input className="w-full border-2 border-slate-50 p-3 rounded-xl text-sm focus:border-blue-400 outline-none" value={data.personal.fullName} onChange={e => setData({...data, personal: {...data.personal, fullName: e.target.value}})} placeholder="Full Name" />
+                                <input className="w-full border-2 border-slate-50 p-3 rounded-xl text-sm focus:border-blue-400 outline-none" value={data.personal.jobTitle} onChange={e => setData({...data, personal: {...data.personal, jobTitle: e.target.value}})} placeholder="Job Title" />
+                            </div>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-10 mb-4">Style Archetypes</h3>
+                            <div className="grid gap-2">
+                                {['modern', 'brutalist', 'dark'].map(id => (
+                                    <button key={id} onClick={() => setData({...data, templateId: id})} className={`text-left p-4 rounded-2xl text-[10px] font-bold border-2 transition-all ${data.templateId === id ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-50 text-slate-400'}`}>
+                                        {id.toUpperCase()} STYLE
+                                    </button>
+                                ))}
+                            </div>
+                        </aside>
+                        <main className="flex-1 canvas-container hide-scrollbar">
+                            <div ref={resumeRef} className="resume-paper">
+                                <RenderTemplate />
+                            </div>
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
 </html>
